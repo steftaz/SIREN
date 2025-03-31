@@ -2691,6 +2691,25 @@ files = [
 windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
+name = "pynrrd"
+version = "1.1.3"
+description = "Pure python module for reading and writing NRRD files."
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "pynrrd-1.1.3-py3-none-any.whl", hash = "sha256:21f7e370045e7ef8a86841965b2ff3a18937efbb4e2078e346168463f8f34b7e"},
+    {file = "pynrrd-1.1.3.tar.gz", hash = "sha256:a331263bc9f05c3168182e61d6098e256a34e0fadbb7427a1d086d8942fbcbe0"},
+]
+
+[package.dependencies]
+numpy = ">=1.21"
+typing_extensions = "*"
+
+[package.extras]
+dev = ["build", "pre-commit", "pytest"]
+
+[[package]]
 name = "pyparsing"
 version = "3.2.1"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
@@ -3954,4 +3973,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13"
-content-hash = "3bc40efaab2aaffbf04d5497b23bfb849898fa990366f786173c247a0c2d6ab8"
+content-hash = "b0f8f0ac7284d137058ff8fef4130e2cb225dc4b865840790ab179015429a762"
