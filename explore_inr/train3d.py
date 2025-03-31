@@ -1,5 +1,7 @@
 from collections import OrderedDict
 
+from torchvision.transforms import Compose, Resize, ToTensor
+
 import wandb
 import nrrd
 import torch
@@ -87,9 +89,7 @@ class Siren(nn.Module):
         self.net = nn.Sequential(*self.net)
 
     def forward(self, coords):
-        coords = coords.clone().detach().requires_grad_(True) # allows to take derivative w.r.t. input
-        output = self.net(coords)
-        return output, coords
+        return self.net(coords)
 
     def forward_with_activations(self, coords, retain_grad=False):
         '''Returns not only model output, but also intermediate activations.
@@ -124,7 +124,7 @@ class Siren(nn.Module):
 class ImageFitting(Dataset):
     def __init__(self, sidelength):
         super().__init__()
-        img = get_scan_tensor()
+        img = get_scan_tensor(sidelength)
         self.pixels = img.flatten()
         self.coords = get_mgrid(sidelength, 3)
 
@@ -136,12 +136,19 @@ class ImageFitting(Dataset):
 
         return self.coords, self.pixels
 
-def get_scan_tensor():
+def get_scan_tensor(sidelenght):
     data, headers = nrrd.read("ASOCA_001_0000.nrrd")
-    data = torch.from_numpy(data)
-    data = data.float()
-    data = (data - data.min()) / (data.max() - data.min())
-    return data
+    transform = Compose([
+        ToTensor(),
+        Resize(sidelenght),
+    ])
+    # data = torch.from_numpy(data)
+    # data = data.float()
+    # data = data.resize((sidelenght, sidelenght, sidelenght))
+    # data = (data - data.min()) / (data.max() - data.min())
+    # return data
+    return transform(data)
+
 
 def psnr(im1, im2, max_pixel_value=1):
     return 20 * torch.log10(max_pixel_value / mse(im1, im2))
@@ -149,7 +156,7 @@ def psnr(im1, im2, max_pixel_value=1):
 def mse(im1, im2):
     return F.mse_loss(im1, im2)
 
-wandb.login()
+# wandb.login()
 
 epochs = 500
 learning_rate = 1e-4
@@ -162,14 +169,14 @@ model_input, ground_truth = next(iter(dataloader))
 model_input, ground_truth = model_input.to(device), ground_truth.to(device)
 
 
-run = wandb.init(
-    project="SIREN_scans",
-    name="SIREN_scan",
-    config={
-        "epochs": epochs,
-        "learning rate": learning_rate,
-    },
-)
+# run = wandb.init(
+#     project="SIREN_scans",
+#     name="SIREN_scan",
+#     config={
+#         "epochs": epochs,
+#         "learning rate": learning_rate,
+#     },
+# )
 
 model = Siren(in_features=3, out_features=1, hidden_features=256,
               hidden_layers=3, outermost_linear=True).to(device)
@@ -179,7 +186,7 @@ optim = torch.optim.Adam(lr=learning_rate, params=model.parameters())
 
 
 for epoch in range(epochs):
-    model_output, coords = model(model_input)
+    model_output = model(model_input)
 
     loss = mse(ground_truth, model_output)
     psnr = psnr(ground_truth, model_output)
@@ -188,13 +195,13 @@ for epoch in range(epochs):
     loss.backward()
     optim.step()
 
-    run.log({
-        "loss": loss,
-        "psnr": psnr,
-    })
+    # run.log({
+    #     "loss": loss,
+    #     "psnr": psnr,
+    # })
 
     if not epoch % 10:
         print(f"Epoch {epoch}: loss = {loss:.4f}, psnr = {psnr:.4f}")
 
-run.finish()
+# run.finish()
 
